@@ -1,16 +1,19 @@
-import React from 'react';
-import styled from 'styled-components';
-
-const DivWrapper = styled.div`
-  background-color: red;
-`;
-
-const Acomp = ({ a }: { a: number }) => {
-  return <DivWrapper>{a}</DivWrapper>;
-};
+import React, { useState } from 'react';
+import Layout from './components/Layout';
+import Exchange from './pages/Exchange';
+import History from './pages/History';
 
 function App() {
-  return <Acomp a={123} />;
+  const [page, setPage] = useState('exchange');
+  const handleChangeView = (aPage: string) => {
+    setPage(aPage);
+  };
+  return (
+    <Layout page={page} changeView={handleChangeView}>
+      {page === 'exchange' && <Exchange />}
+      {page === 'history' && <History />}
+    </Layout>
+  );
 }
 
 export default App;

@@ -13,14 +13,6 @@ const EXCHANGE_RATE_TABLE = {
 
 // 서버로부터 받아온다고 가정
 
-// unitList도 서버에서 받아온다고 가정
-const checkValidationCoinUnitFactory = (unitList: string[]) => {
-  const unitSet = new Set();
-  unitList.forEach((unit) => unitSet.add(unit));
-  return (unit: string) => {
-    return unitSet.has(unit);
-  };
-};
 const isAllDigitOrComma = (input: string) => {
   const inputArr = input.split('');
   const possibleChar = '1234567890.';
@@ -39,6 +31,64 @@ export const isValidAmount = (input: string) => {
   return fractionalPart.length <= 10;
 };
 
+export const formatAmount = (amount: string) => {
+  const [integer, fractionalPart] = amount.split('.');
+  const newFractionalPart = (fractionalPart ?? '').slice(0, 2).split('');
+  while (
+    newFractionalPart.length &&
+    newFractionalPart[newFractionalPart.length - 1] === '0'
+  ) {
+    newFractionalPart.pop();
+  }
+
+  let newInteger = '';
+  let cnt = 0;
+  for (let i = integer.length - 1; i >= 0; i--) {
+    if (cnt === 3) {
+      cnt = 0;
+      newInteger = ',' + newInteger;
+    }
+    newInteger = integer[i] + newInteger;
+    cnt++;
+  }
+
+  if (newFractionalPart.length) {
+    return newInteger + '.' + newFractionalPart.join('');
+  }
+  return newInteger;
+};
+export const calcAmount =
+  (operator: '-' | '+') => (amount1: string, amount2: string) => {
+    // 1과 2의 소숫점을 찾는다.
+    const [integer1, fractionalPart1] = amount1.split('.');
+    const [integer2, fractionalPart2] = amount2.split('.');
+    const commaPosition = Math.max(
+      fractionalPart1?.length ?? 0,
+      fractionalPart2?.length ?? 0,
+    );
+    const multiple = Math.pow(10, commaPosition);
+    const a =
+      BigInt(multiple) * BigInt(integer1) + BigInt(fractionalPart1 ?? '0');
+    const b =
+      BigInt(multiple) * BigInt(integer2) + BigInt(fractionalPart2 ?? '0');
+
+    const res = operator === '+' ? (a + b).toString() : (a - b).toString();
+
+    if (commaPosition) {
+      const resCommaPosition = res.length - commaPosition;
+      return res.slice(0, resCommaPosition) + '.' + res.slice(resCommaPosition);
+    }
+    return res;
+
+    // 소숫점중 큰 자리수를 곱한다.
+  };
+export const adjustValidAmount = (amount: string) => {
+  if (amount === '') return amount;
+  if (countComma(amount) === 0) {
+    return Number(amount).toString();
+  }
+  return amount;
+};
 export const typeToUnit = (type: string) => {
   const mapper: Record<string, string> = {
     solana: 'SOL',

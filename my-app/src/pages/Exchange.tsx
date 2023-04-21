@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
+import React, { useReducer, useState } from 'react';
 import styled from 'styled-components';
 import { Button, Hr, TextField } from '../components';
 import { resources } from '../constants/resources';
 import Select from '../components/Select';
 import HistoryItem from '../features/HistoryItem';
+import {
+  adjustValidAmount,
+  calcAmount,
+  Coin,
+  isValidAmount,
+} from '../utils/coin/coin';
 
 const ExchangeSectionWrapper = styled.section`
   h1 {
@@ -19,6 +25,7 @@ const ExchangeSectionWrapper = styled.section`
     /* Light/Shade/900 */
     color: #2a3249;
   }
+
   > div {
     display: flex;
     gap: 17px;
@@ -49,7 +56,9 @@ const Aside = styled.aside`
 
     color: #4c5b7a;
   }
+
   flex-direction: column;
+
   .summary-list-wrapper {
     display: flex;
     flex-direction: column;
@@ -74,6 +83,7 @@ const SummaryItemWrapper = styled.li`
     justify-content: flex-start;
     align-items: center;
     gap: 4px;
+
     .circle {
       display: inline-flex;
       justify-content: center;
@@ -86,6 +96,7 @@ const SummaryItemWrapper = styled.li`
       background: rgba(42, 50, 73, 0.05);
       border-radius: 50%;
     }
+
     .coin-type {
       font-family: Poppins;
       font-style: normal;
@@ -102,6 +113,7 @@ const SummaryItemWrapper = styled.li`
       color: #4c5b7a;
     }
   }
+
   .body {
     font-family: Poppins;
     font-style: normal;
@@ -164,11 +176,13 @@ const ExchangeFormWrapper = styled.article`
   height: 386px;
 
   justify-content: space-between;
+
   > div {
     display: flex;
     flex-direction: column;
     gap: 30px;
   }
+
   .input-wrapper {
     display: flex;
     flex-direction: row;
@@ -180,7 +194,64 @@ const ExchangeFormWrapper = styled.article`
 
 const OPTIONS = ['solana', 'ethereum', 'bnb'];
 
+type Wallet = Coin[];
+type exchangeAction = {
+  type: 'exchange';
+  payload: {
+    form: Coin;
+    to: Coin;
+  };
+};
+
+const calcWallet = (wallet: Wallet, from: Coin, to: Coin) => {
+  const copiedWallet = structuredClone(wallet) as Wallet;
+
+  return copiedWallet.map((coin) => {
+    if (coin.type === from.type) {
+      return {
+        type: coin.type,
+        amount: calcAmount('-')(coin.amount, from.amount),
+      };
+    }
+    if (coin.type === to.type) {
+      return {
+        type: coin.type,
+        amount: calcAmount('+')(coin.amount, to.amount),
+      };
+    }
+    return { ...coin };
+  });
+};
+const walletReducer = (state: Wallet, action: exchangeAction) => {
+  switch (action.type) {
+    case 'exchange':
+      return calcWallet(state, action.payload.form, action.payload.to);
+    default:
+      return state;
+  }
+};
+
+const canExchange = (wallet: Wallet, from: Coin) => {
+  const target = wallet.find((coin) => from.type === coin.type);
+  if (!target) return false;
+  if (
+    from.amount
+      .split('')
+      .filter((char) => char !== '.')
+      .every((char) => char === '0')
+  )
+    return false;
+  const res = calcAmount('-')(target.amount, from.amount);
+  console.log({ res });
+  return res[0] !== '-';
+};
 const ExchangeForm = () => {
+  const [wallet, dispatch] = useReducer(walletReducer, [
+    { type: 'ethereum', amount: '100' },
+    { type: 'bnb', amount: '0' },
+    { type: 'solana', amount: '0' },
+  ]);
+
   const [from, setFrom] = useState('');
 
   const isDisable = (option: string) => option === 'solana';
@@ -190,6 +261,7 @@ const ExchangeForm = () => {
   const [toUnit, setToUnit] = useState(
     OPTIONS.filter((option) => !isDisable(option))[1],
   );
+  console.log(canExchange(wallet, { type: fromUnit, amount: from }));
   return (
     <form
       onSubmit={(e) => {
@@ -203,7 +275,9 @@ const ExchangeForm = () => {
             <TextField
               value={from}
               onChange={(e) => {
-                setFrom(e.target.value);
+                const value = e.target.value;
+                if (!isValidAmount(value)) return;
+                setFrom(adjustValidAmount(value));
               }}
               label={'전환 수량(from)'}
               autoFocus

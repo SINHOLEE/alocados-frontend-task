@@ -20,7 +20,7 @@ const TextFieldWrapper = styled.div`
   }
 
   input {
-    font-family: 'Poppins';
+    font-family: Poppins;
     font-style: normal;
     font-weight: 600;
     font-size: 18px;

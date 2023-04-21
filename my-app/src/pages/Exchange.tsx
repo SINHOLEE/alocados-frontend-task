@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Button, Hr, TextField } from '../components';
 import { resources } from '../constants/resources';
-import { Coin } from '../utils/coin/coin';
 import Select from '../components/Select';
+import HistoryItem from '../features/HistoryItem';
 
 const ExchangeSectionWrapper = styled.section`
   h1 {
@@ -35,7 +35,7 @@ const Aside = styled.aside`
   border-radius: 12px;
 
   .title {
-    font-family: 'Poppins';
+    font-family: Poppins;
     font-style: normal;
     font-weight: 600;
     font-size: 20px;
@@ -87,7 +87,7 @@ const SummaryItemWrapper = styled.li`
       border-radius: 50%;
     }
     .coin-type {
-      font-family: 'Poppins';
+      font-family: Poppins;
       font-style: normal;
       font-weight: 400;
       font-size: 18px;
@@ -103,7 +103,7 @@ const SummaryItemWrapper = styled.li`
     }
   }
   .body {
-    font-family: 'Poppins';
+    font-family: Poppins;
     font-style: normal;
     font-weight: 600;
     font-size: 18px;
@@ -180,129 +180,6 @@ const ExchangeFormWrapper = styled.article`
 
 const OPTIONS = ['solana', 'ethereum', 'bnb'];
 
-type HistoryItemProps = {
-  createdAt: string;
-  from: Coin;
-  to: Coin;
-};
-
-const HistoryItemWrapper = styled.li`
-  width: 634px;
-  height: 48px;
-
-  background: #f4f5f8;
-  border-radius: 12px;
-  padding: 0 20px;
-  display: flex;
-  justify-content: space-between;
-  .left {
-    display: flex;
-    align-items: center;
-    span {
-      font-family: 'Poppins';
-      font-style: normal;
-      font-weight: 400;
-      font-size: 14px;
-      line-height: 178%;
-      /* identical to box height, or 25px */
-
-      font-feature-settings: 'pnum' on, 'lnum' on, 'cv03' on, 'cv04' on,
-        'cv09' on;
-
-      /* Light/Shade/900 */
-
-      color: #2a3249;
-    }
-  }
-  .right {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 33px;
-    .right-icon-wrapper {
-      display: flex;
-      justify-content: center;
-    }
-    .coin {
-      display: flex;
-      flex-direction: row;
-      justify-content: center;
-      align-items: center;
-      gap: 2px;
-
-      font-family: 'Poppins';
-      font-style: normal;
-      font-weight: 600;
-      font-size: 18px;
-      line-height: 178%;
-      /* identical to box height, or 32px */
-
-      text-align: right;
-      font-feature-settings: 'pnum' on, 'lnum' on, 'cv03' on, 'cv04' on,
-        'cv09' on;
-
-      /* Light/Shade/700 */
-
-      color: #404e71;
-    }
-  }
-`;
-
-const typeToUnit = (type: string) => {
-  const mapper: Record<string, string> = {
-    solana: 'SOL',
-    ethereum: 'ETH',
-    bnb: 'BnB',
-  };
-  return mapper[type];
-};
-const unitToType = (type: string) => {
-  const mapper: Record<string, string> = {
-    SOL: 'solana',
-    ETH: 'ethereum',
-    BnB: 'bnb',
-  };
-  return mapper[type];
-};
-const formatDate = (timestamp: number) => {
-  const date = new Date(timestamp);
-  const year = date.getFullYear();
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
-  const hours = date.getHours() % 12 || 12;
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  const amOrPm = date.getHours() >= 12 ? 'PM' : 'AM';
-
-  return `${year}-${month}-${day}, ${amOrPm} ${hours}:${minutes}`;
-};
-
-const HistoryItem = (props: HistoryItemProps) => {
-  return (
-    <HistoryItemWrapper>
-      <div className={'left'}>
-        <span>{props.createdAt}</span>
-      </div>
-      <div className={'right'}>
-        <div className={'coin'}>
-          <img
-            src={resources[unitToType(props.from.unit)]}
-            alt={props.from.unit}
-          />
-          <span>{props.from.amount}</span>
-          <span>{props.from.unit}</span>
-        </div>
-        <div className={'right-icon-wrapper'}>
-          <img src={resources.right} alt={'오른쪽-화살표-아이콘'} />
-        </div>
-        <div className={'coin'}>
-          <img src={resources[unitToType(props.to.unit)]} alt={props.to.unit} />
-          <span>{props.to.amount}</span>
-          <span>{props.to.unit}</span>
-        </div>
-      </div>
-    </HistoryItemWrapper>
-  );
-};
 const ExchangeForm = () => {
   const [from, setFrom] = useState('');
 
@@ -326,7 +203,6 @@ const ExchangeForm = () => {
             <TextField
               value={from}
               onChange={(e) => {
-                console.log(e.target.value);
                 setFrom(e.target.value);
               }}
               label={'전환 수량(from)'}
@@ -363,9 +239,9 @@ const ExchangeForm = () => {
         </div>
         <Button text={'환전'} style={{ height: 56 }} />
         <HistoryItem
-          createdAt={formatDate(Date.now())}
-          from={{ unit: typeToUnit('bnb'), amount: '123.223' }}
-          to={{ unit: typeToUnit('ethereum'), amount: '50.223' }}
+          createdAt={Date.now()}
+          from={{ type: 'bnb', amount: '123.223' }}
+          to={{ type: 'ethereum', amount: '50.223' }}
         />
       </ExchangeFormWrapper>
     </form>

@@ -5,4 +5,5 @@ export const resources: Record<string, string> = {
   ethereum: './coinIcons/ethereum.svg',
   bnb: './coinIcons/bnb.svg',
   right: './right.svg',
+  arrowDown: './arrow-down.svg',
 };

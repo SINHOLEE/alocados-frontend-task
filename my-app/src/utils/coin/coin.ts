@@ -1,6 +1,6 @@
 export type Coin = {
   amount: string;
-  unit: string;
+  type: string;
 };
 
 // 서버로 부터 받아오는 정보를 가공한다고 가정한다.
@@ -37,4 +37,21 @@ export const isValidAmount = (input: string) => {
 
   const [, fractionalPart] = input.split('.');
   return fractionalPart.length <= 10;
+};
+
+export const typeToUnit = (type: string) => {
+  const mapper: Record<string, string> = {
+    solana: 'SOL',
+    ethereum: 'ETH',
+    bnb: 'BnB',
+  };
+  return mapper[type];
+};
+export const unitToType = (type: string) => {
+  const mapper: Record<string, string> = {
+    SOL: 'solana',
+    ETH: 'ethereum',
+    BnB: 'bnb',
+  };
+  return mapper[type];
 };

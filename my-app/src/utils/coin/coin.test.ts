@@ -3,7 +3,9 @@ import { calcAmount, formatAmount, isValidAmount } from './coin';
 describe('coin', () => {
   describe('calcAmount', () => {
     it('should return correct answer1 for add', () => {
-      expect(calcAmount('+')('100000000', '99999999')).toBe('199999999');
+      expect(calcAmount('+')('100000000', '99999999')).toBe(
+        '199999999.0000000000',
+      );
     });
     it('should return correct answer2 for add', () => {
       expect(calcAmount('+')('0.1234567890', '10.0000000001')).toBe(
@@ -11,7 +13,7 @@ describe('coin', () => {
       );
     });
     it('should return correct answer1 for subtraction', () => {
-      expect(calcAmount('-')('100000000', '99999999')).toBe('1');
+      expect(calcAmount('-')('100000000', '99999999')).toBe('1.0000000000');
     });
     it('should return correct answer2 for subtraction', () => {
       expect(calcAmount('-')('10.1234567890', '0.0000000001')).toBe(

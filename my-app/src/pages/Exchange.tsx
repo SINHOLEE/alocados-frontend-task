@@ -1,16 +1,33 @@
-import React, { useReducer, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Button, Hr, TextField } from '../components';
 import { resources } from '../constants/resources';
 import Select from '../components/Select';
-import HistoryItem from '../features/HistoryItem';
+import HistoryItem, { HistoryItemProps } from '../features/HistoryItem';
 import {
   adjustValidAmount,
   calcAmount,
+  calcToAmount,
   Coin,
+  formatAmount,
   isValidAmount,
+  typeToUnit,
 } from '../utils/coin/coin';
+import { WalletProps } from '../features/walletReducer';
 
+type OnExchangeProps = {
+  onExchange: (from: Coin, to: Coin) => void;
+};
+type SummaryItemProps = {
+  coin: {
+    type: string;
+    amount: string;
+    unit: string;
+  };
+};
+type LastHistory = {
+  lastHistory?: HistoryItemProps;
+};
 const ExchangeSectionWrapper = styled.section`
   h1 {
     font-family: 'Pretendard';
@@ -65,13 +82,6 @@ const Aside = styled.aside`
     gap: 30px;
   }
 `;
-type SummaryItemProps = {
-  coin: {
-    type: string;
-    amount: string;
-    unit: string;
-  };
-};
 
 const SummaryItemWrapper = styled.li`
   display: flex;
@@ -142,12 +152,12 @@ const SummaryItem = ({ coin }: SummaryItemProps) => (
       <span className={'coin-type'}>{coin.unit}</span>
     </div>
     <div className={'body'}>
-      <span>{coin.amount}</span>
+      <span>{formatAmount(coin.amount)}</span>
       <span>{coin.unit}</span>
     </div>
   </SummaryItemWrapper>
 );
-const Summary = () => {
+const Summary = ({ wallet }: WalletProps) => {
   return (
     <Aside>
       <div>
@@ -156,13 +166,11 @@ const Summary = () => {
       {/* eslint-disable-next-line react/jsx-no-undef */}
       <Hr />
       <div className={'summary-list-wrapper'}>
-        {[
-          { unit: 'SOL', type: 'solana', amount: '123123.2123' },
-          { unit: 'ETH', type: 'ethereum', amount: '33' },
-          { unit: 'BNB', type: 'bnb', amount: '0.23' },
-        ].map((coin) => (
-          <SummaryItem coin={coin} key={coin.unit} />
-        ))}
+        {wallet
+          .map((coin) => ({ ...coin, unit: typeToUnit(coin.type) }))
+          .map((coin) => (
+            <SummaryItem coin={coin} key={coin.unit} />
+          ))}
       </div>
     </Aside>
   );
@@ -194,44 +202,7 @@ const ExchangeFormWrapper = styled.article`
 
 const OPTIONS = ['solana', 'ethereum', 'bnb'];
 
-type Wallet = Coin[];
-type exchangeAction = {
-  type: 'exchange';
-  payload: {
-    form: Coin;
-    to: Coin;
-  };
-};
-
-const calcWallet = (wallet: Wallet, from: Coin, to: Coin) => {
-  const copiedWallet = structuredClone(wallet) as Wallet;
-
-  return copiedWallet.map((coin) => {
-    if (coin.type === from.type) {
-      return {
-        type: coin.type,
-        amount: calcAmount('-')(coin.amount, from.amount),
-      };
-    }
-    if (coin.type === to.type) {
-      return {
-        type: coin.type,
-        amount: calcAmount('+')(coin.amount, to.amount),
-      };
-    }
-    return { ...coin };
-  });
-};
-const walletReducer = (state: Wallet, action: exchangeAction) => {
-  switch (action.type) {
-    case 'exchange':
-      return calcWallet(state, action.payload.form, action.payload.to);
-    default:
-      return state;
-  }
-};
-
-const canExchange = (wallet: Wallet, from: Coin) => {
+const canExchange = (wallet: Coin[], from: Coin) => {
   const target = wallet.find((coin) => from.type === coin.type);
   if (!target) return false;
   if (
@@ -242,31 +213,39 @@ const canExchange = (wallet: Wallet, from: Coin) => {
   )
     return false;
   const res = calcAmount('-')(target.amount, from.amount);
-  console.log({ res });
   return res[0] !== '-';
 };
-const ExchangeForm = () => {
-  const [wallet, dispatch] = useReducer(walletReducer, [
-    { type: 'ethereum', amount: '100' },
-    { type: 'bnb', amount: '0' },
-    { type: 'solana', amount: '0' },
-  ]);
+const createToUnitOptions = (aFromUnit: string) =>
+  OPTIONS.filter((option) => option !== aFromUnit);
 
+const ExchangeForm = ({
+  wallet,
+  onExchange,
+  lastHistory,
+}: WalletProps & OnExchangeProps & LastHistory) => {
   const [from, setFrom] = useState('');
 
-  const isDisable = (option: string) => option === 'solana';
-  const [fromUnit, setFromUnit] = useState(
-    OPTIONS.filter((option) => !isDisable(option))[0],
-  );
-  const [toUnit, setToUnit] = useState(
-    OPTIONS.filter((option) => !isDisable(option))[1],
-  );
-  console.log(canExchange(wallet, { type: fromUnit, amount: from }));
+  const [fromUnit, setFromUnit] = useState(OPTIONS[0]);
+  const [toUnit, setToUnit] = useState(createToUnitOptions(fromUnit)[0]);
+
+  useEffect(() => {
+    setToUnit(createToUnitOptions(fromUnit)[0]);
+  }, [fromUnit]);
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        console.log(toUnit, fromUnit, from);
+        onExchange(
+          { type: fromUnit, amount: from },
+          {
+            type: toUnit,
+            amount: calcToAmount(
+              { type: fromUnit, amount: from },
+              { type: toUnit },
+            ),
+          },
+        );
+        setFrom('');
       }}
     >
       <ExchangeFormWrapper>
@@ -274,6 +253,7 @@ const ExchangeForm = () => {
           <div className={'input-wrapper'}>
             <TextField
               value={from}
+              isError={!canExchange(wallet, { type: fromUnit, amount: from })}
               onChange={(e) => {
                 const value = e.target.value;
                 if (!isValidAmount(value)) return;
@@ -287,7 +267,6 @@ const ExchangeForm = () => {
               style={{ minWidth: 150 }}
               onChange={(e) => setFromUnit(e.target.value)}
               options={OPTIONS}
-              isDisabled={(option) => isDisable(option)}
             />
           </div>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -296,40 +275,49 @@ const ExchangeForm = () => {
           <div className={'input-wrapper'}>
             <TextField
               label={'전환 수량(to)'}
-              value={from + '23'}
-              key={from}
+              value={calcToAmount(
+                { type: fromUnit, amount: from },
+                { type: toUnit },
+              )}
+              key={`${from}-${fromUnit}-${toUnit}`}
               disabled
-              isError
               isForView
             />
             <Select
               value={toUnit}
               style={{ minWidth: 150 }}
               onChange={(e) => setToUnit(e.target.value)}
-              options={OPTIONS}
-              isDisabled={(option) => isDisable(option)}
+              options={createToUnitOptions(fromUnit)}
             />
           </div>
         </div>
-        <Button text={'환전'} style={{ height: 56 }} />
-        <HistoryItem
-          createdAt={Date.now()}
-          from={{ type: 'bnb', amount: '123.223' }}
-          to={{ type: 'ethereum', amount: '50.223' }}
+        <Button
+          text={'환전'}
+          style={{ height: 56 }}
+          disabled={!canExchange(wallet, { type: fromUnit, amount: from })}
         />
+        {lastHistory && <HistoryItem {...lastHistory} />}
       </ExchangeFormWrapper>
     </form>
   );
 };
 
-const Exchange = () => {
+const Exchange = ({
+  wallet,
+  onExchange,
+  lastHistory,
+}: WalletProps & OnExchangeProps & LastHistory) => {
   return (
     <ExchangeSectionWrapper>
       <h1>환전하기</h1>
       <br />
       <div>
-        <Summary />
-        <ExchangeForm />
+        <Summary wallet={wallet} />
+        <ExchangeForm
+          wallet={wallet}
+          onExchange={onExchange}
+          lastHistory={lastHistory}
+        />
       </div>
     </ExchangeSectionWrapper>
   );

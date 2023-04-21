@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import HistoryItem from '../features/HistoryItem';
+import HistoryItem, { HistoryItemProps } from '../features/HistoryItem';
 import { resources } from '../constants/resources';
 
 const HistoryWrapper = styled.section`
@@ -46,19 +46,7 @@ const HistoryWrapper = styled.section`
     gap: 8px;
   }
 `;
-const histories = [
-  {
-    createdAt: Date.now(),
-    from: { type: 'bnb', amount: '123.223' },
-    to: { type: 'ethereum', amount: '50.223' },
-  },
-  {
-    createdAt: Date.now() - 80000,
-    from: { type: 'solana', amount: '123.223' },
-    to: { type: 'ethereum', amount: '50.223' },
-  },
-];
-const History = () => {
+const History = ({ historyList }: { historyList: HistoryItemProps[] }) => {
   const [isAsc, setIsAsc] = useState(true);
   const toggleSortCondition = () => setIsAsc((prev) => !prev);
   return (
@@ -77,7 +65,7 @@ const History = () => {
         <span>환전금액</span>
       </div>
       <ul>
-        {histories
+        {historyList
           .sort((a, b) => {
             return isAsc
               ? a.createdAt - b.createdAt

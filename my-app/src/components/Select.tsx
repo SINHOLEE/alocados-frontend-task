@@ -5,7 +5,7 @@ type SelectProps = {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   options: string[];
-  isDisabled: (option: string) => boolean;
+  isDisabled?: (option: string) => boolean;
 } & React.DetailedHTMLProps<
   React.SelectHTMLAttributes<HTMLSelectElement>,
   HTMLSelectElement
@@ -37,7 +37,7 @@ const Select = (props: SelectProps) => {
           <option
             key={option}
             value={option}
-            disabled={props.isDisabled(option)}
+            disabled={props.isDisabled && props.isDisabled(option)}
           >
             {option}
           </option>

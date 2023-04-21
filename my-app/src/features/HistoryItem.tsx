@@ -1,10 +1,10 @@
-import { Coin, typeToUnit } from '../utils/coin/coin';
+import { Coin, formatAmount, typeToUnit } from '../utils/coin/coin';
 import styled from 'styled-components';
 import { resources } from '../constants/resources';
 import React from 'react';
 import { formatDate } from './HistoryItem.utils';
 
-type HistoryItemProps = {
+export type HistoryItemProps = {
   createdAt: number;
   from: Coin;
   to: Coin;
@@ -19,7 +19,7 @@ const HistoryItemWrapper = styled.li`
   padding: 0 20px;
   display: flex;
   justify-content: space-between;
-  .left {
+  > .left {
     display: flex;
     align-items: center;
     span {
@@ -48,12 +48,17 @@ const HistoryItemWrapper = styled.li`
       justify-content: center;
     }
     .coin {
+      &.left {
+        justify-content: start;
+      }
+      &.right {
+        justify-content: end;
+      }
       display: flex;
       flex-direction: row;
       justify-content: center;
       align-items: center;
       gap: 2px;
-
       font-family: Poppins;
       font-style: normal;
       font-weight: 600;
@@ -79,20 +84,20 @@ const HistoryItem = (props: HistoryItemProps) => {
         <span>{formatDate(props.createdAt)}</span>
       </div>
       <div className={'right'}>
-        <div className={'coin'}>
+        <div className={'coin left'}>
           <img
             src={resources[props.from.type]}
             alt={typeToUnit(props.from.type)}
           />
-          <span>{props.from.amount}</span>
+          <span>{formatAmount(props.from.amount)}</span>
           <span>{typeToUnit(props.from.type)}</span>
         </div>
         <div className={'right-icon-wrapper'}>
           <img src={resources.right} alt={'오른쪽-화살표-아이콘'} />
         </div>
-        <div className={'coin'}>
+        <div className={'coin right'}>
           <img src={resources[props.to.type]} alt={typeToUnit(props.to.type)} />
-          <span>{props.to.amount}</span>
+          <span>{formatAmount(props.to.amount)}</span>
           <span>{typeToUnit(props.to.type)}</span>
         </div>
       </div>

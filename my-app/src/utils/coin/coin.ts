@@ -1,3 +1,5 @@
+import Decimal from 'decimal.js';
+
 export type Coin = {
   amount: string;
   type: string;
@@ -5,12 +7,16 @@ export type Coin = {
 
 // 서버로 부터 받아오는 정보를 가공한다고 가정한다.
 // 만약 ethereum을 solana로 바꾸고 싶다면 const exchangeRate = EXCHANGE_RATE_TABLE['Ethereum']['Solana']
-const EXCHANGE_RATE_TABLE = {
-  Ethereum: { Solana: 100, BnB: 50 },
-  Solana: { Ethereum: 0.01, BnB: 2 },
-  BnB: { Ethereum: 0.02, Solana: 0.5 },
+const EXCHANGE_RATE_TABLE: Record<string, Record<string, string>> = {
+  ethereum: { solana: '100', bnb: '50' },
+  solana: { ethereum: '0.01', bnb: '2' },
+  bnb: { ethereum: '0.02', solana: '0.5' },
 };
 
+export const calcToAmount = (from: Coin, to: Pick<Coin, 'type'>) => {
+  const b = EXCHANGE_RATE_TABLE?.[from.type]?.[to.type] ?? '1';
+  return calcAmount('*')(from.amount, b);
+};
 // 서버로부터 받아온다고 가정
 
 const isAllDigitOrComma = (input: string) => {
@@ -58,6 +64,22 @@ export const formatAmount = (amount: string) => {
   return newInteger;
 };
 export const calcAmount =
+  (operator: '-' | '+' | '*') => (amount1: string, amount2: string) => {
+    const num1 = new Decimal(amount1 || '0');
+    const num2 = new Decimal(amount2 || '0');
+    let res;
+
+    if (operator === '+') {
+      res = num1.plus(num2);
+    } else if (operator === '-') {
+      res = num1.minus(num2);
+    } else {
+      res = num1.mul(num2);
+    }
+
+    return res.toFixed(10);
+  };
+export const calcAmount2 =
   (operator: '-' | '+') => (amount1: string, amount2: string) => {
     // 1과 2의 소숫점을 찾는다.
     const [integer1, fractionalPart1] = amount1.split('.');
